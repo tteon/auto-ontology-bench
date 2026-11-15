@@ -1,0 +1,25 @@
+[project]
+name = "auto-ontology-bench"
+version = "0.1.0"
+requires-python = ">=3.12"
+dependencies = [
+    "asyncpg>=0.32.0",
+    "fastapi>=0.163.0",
+    "httpx>=0.28.1",
+    "neo4j>=6.4.1",
+    "numpy>=2.5.4",
+    "opentelemetry-sdk>=1.45.2",
+    "psycopg[binary]>=3.3.9",
+    "pydantic>=2.14.3",
+    "python-dotenv>=1.2.4",
+    "pyyaml>=6.0.3",
+    "uvicorn>=0.54.0",
+]
+
+[tool.uv]
+package = false
+
+[dependency-groups]
+dev = [
+    "pytest>=9.2.0",
+]

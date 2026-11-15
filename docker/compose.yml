@@ -1,0 +1,62 @@
+# Benchmark Postgres. CPU is pinned to 8 logical CPUs (4 physical cores x 2 HT:
+# 0-3 and their siblings 8-11) to match Aura's 8 available processors; the
+# gateway and load generator run on 4-7,12-15. Published on localhost only;
+# Auto-Ontology reaches it as finder-pg:5432 over its compose network (AUTO_ONTOLOGY_NETWORK,
+# default auto-ontology_default -- the network NVIDIA/auto-ontology's docker compose creates).
+# On hosts with fewer than 16 logical CPUs, set PG_CPUSET (e.g. "0-3").
+name: aob
+services:
+  finder-pg:
+    image: postgres:16
+    container_name: finder-pg
+    restart: unless-stopped
+    cpuset: "${PG_CPUSET:-0-3,8-11}"
+    mem_limit: 24g
+    shm_size: 8g
+    environment:
+      POSTGRES_USER: bench
+      POSTGRES_PASSWORD: ${BENCH_PG_PASSWORD}
+      POSTGRES_DB: finder_real
+    ports:
+      - "127.0.0.1:${BENCH_PG_PORT}:5432"
+    command:
+      - postgres
+      - -c
+      - shared_preload_libraries=pg_stat_statements
+      - -c
+      - pg_stat_statements.track=all
+      - -c
+      - track_io_timing=on
+      - -c
+      - shared_buffers=6GB
+      - -c
+      - effective_cache_size=18GB
+      - -c
+      - work_mem=64MB
+      - -c
+      - maintenance_work_mem=1GB
+      - -c
+      - max_connections=400
+      - -c
+      - max_worker_processes=16
+      - -c
+      - max_parallel_workers=8
+      - -c
+      - max_parallel_workers_per_gather=2
+      - -c
+      - random_page_cost=1.1
+      - -c
+      - jit=off
+    volumes:
+      - finder_pg_data:/var/lib/postgresql/data
+    networks: [default, auto-ontology]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U bench -d finder_real"]
+      interval: 5s
+      retries: 20
+volumes:
+  finder_pg_data:
+networks:
+  auto-ontology:
+    external: true
+    name: ${AUTO_ONTOLOGY_NETWORK:-auto-ontology_default}
