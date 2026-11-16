@@ -1,0 +1,329 @@
+{
+ "nodes": {
+  "companies": {
+   "label": "Company",
+   "key": "company_id",
+   "properties": [
+    "company_id",
+    "cik",
+    "ticker",
+    "name",
+    "sic_code",
+    "sic_description",
+    "state_of_incorporation",
+    "country",
+    "fiscal_year_end",
+    "is_sec_filer",
+    "annual_report_form",
+    "entity_type"
+   ]
+  },
+  "filings": {
+   "label": "Filing",
+   "key": "filing_id",
+   "properties": [
+    "filing_id",
+    "accession_no",
+    "filer_cik",
+    "form_type",
+    "filing_date",
+    "report_date",
+    "primary_doc"
+   ]
+  },
+  "persons": {
+   "label": "Person",
+   "key": "person_id",
+   "properties": [
+    "person_id",
+    "owner_cik",
+    "full_name"
+   ]
+  },
+  "institutional_holders": {
+   "label": "Institution",
+   "key": "institution_id",
+   "properties": [
+    "institution_id",
+    "cik",
+    "name"
+   ]
+  },
+  "metric_definitions": {
+   "label": "MetricDefinition",
+   "key": "metric_id",
+   "properties": [
+    "metric_id",
+    "metric_code",
+    "name",
+    "category",
+    "unit",
+    "description"
+   ]
+  },
+  "financial_metrics": {
+   "label": "FinancialMetric",
+   "key": "financial_metric_id",
+   "properties": [
+    "financial_metric_id",
+    "fiscal_year",
+    "fiscal_period",
+    "period_start",
+    "period_end",
+    "value",
+    "unit",
+    "xbrl_tag"
+   ]
+  },
+  "risk_categories": {
+   "label": "RiskCategory",
+   "key": "risk_category_id",
+   "properties": [
+    "risk_category_id",
+    "name",
+    "description"
+   ]
+  },
+  "risk_factors": {
+   "label": "RiskFactor",
+   "key": "risk_factor_id",
+   "properties": [
+    "risk_factor_id",
+    "title",
+    "summary"
+   ]
+  },
+  "legal_proceedings": {
+   "label": "LegalProceeding",
+   "key": "legal_proceeding_id",
+   "properties": [
+    "legal_proceeding_id",
+    "case_name",
+    "proceeding_type",
+    "forum",
+    "counterparty",
+    "status",
+    "amount_usd",
+    "description"
+   ]
+  },
+  "footnote_related_parties": {
+   "label": "RelatedPartyTransaction",
+   "key": "related_party_id",
+   "properties": [
+    "related_party_id",
+    "related_party_name",
+    "relationship",
+    "transaction_type",
+    "amount_usd",
+    "fiscal_year",
+    "description"
+   ]
+  }
+ },
+ "relationships": [
+  {
+   "type": "SUBJECT_COMPANY",
+   "from_table": "filings",
+   "from": "Filing",
+   "fk_from": "filing_id",
+   "to": "Company",
+   "fk_to": "company_id",
+   "properties": [],
+   "replaces_join_table": null
+  },
+  {
+   "type": "HOLDS_ROLE",
+   "from_table": "company_executives",
+   "from": "Person",
+   "fk_from": "person_id",
+   "to": "Company",
+   "fk_to": "company_id",
+   "properties": [
+    "company_executive_id",
+    "is_director",
+    "is_officer",
+    "is_ten_percent_owner",
+    "officer_title",
+    "first_seen_date",
+    "last_seen_date",
+    "source_filing_id"
+   ],
+   "replaces_join_table": "company_executives"
+  },
+  {
+   "type": "HOLDS",
+   "from_table": "institutional_holdings",
+   "from": "Institution",
+   "fk_from": "institution_id",
+   "to": "Company",
+   "fk_to": "company_id",
+   "properties": [
+    "holding_id",
+    "report_period",
+    "shares",
+    "value_usd",
+    "source_filing_id"
+   ],
+   "replaces_join_table": "institutional_holdings"
+  },
+  {
+   "type": "SUPPLIES",
+   "from_table": "supply_chain_relations",
+   "from": "Company",
+   "fk_from": "supplier_company_id",
+   "to": "Company",
+   "fk_to": "customer_company_id",
+   "properties": [
+    "relation_id",
+    "relation_type",
+    "product_category",
+    "contract_value_usd",
+    "since_year",
+    "evidence",
+    "source_filing_id"
+   ],
+   "replaces_join_table": "supply_chain_relations"
+  },
+  {
+   "type": "REPORTED",
+   "from_table": "financial_metrics",
+   "from": "Company",
+   "fk_from": "company_id",
+   "to": "FinancialMetric",
+   "fk_to": "financial_metric_id",
+   "properties": [],
+   "replaces_join_table": null
+  },
+  {
+   "type": "OF_METRIC",
+   "from_table": "financial_metrics",
+   "from": "FinancialMetric",
+   "fk_from": "financial_metric_id",
+   "to": "MetricDefinition",
+   "fk_to": "metric_id",
+   "properties": [],
+   "replaces_join_table": null
+  },
+  {
+   "type": "SOURCED_FROM",
+   "from_table": "financial_metrics",
+   "from": "FinancialMetric",
+   "fk_from": "financial_metric_id",
+   "to": "Filing",
+   "fk_to": "source_filing_id",
+   "properties": [],
+   "replaces_join_table": null
+  },
+  {
+   "type": "HAS_RISK",
+   "from_table": "risk_factors",
+   "from": "Company",
+   "fk_from": "company_id",
+   "to": "RiskFactor",
+   "fk_to": "risk_factor_id",
+   "properties": [],
+   "replaces_join_table": null
+  },
+  {
+   "type": "IN_CATEGORY",
+   "from_table": "risk_factors",
+   "from": "RiskFactor",
+   "fk_from": "risk_factor_id",
+   "to": "RiskCategory",
+   "fk_to": "risk_category_id",
+   "properties": [],
+   "replaces_join_table": null
+  },
+  {
+   "type": "MENTIONS",
+   "from_table": "risk_factors",
+   "from": "RiskFactor",
+   "fk_from": "risk_factor_id",
+   "to": "Company",
+   "fk_to": "mentioned_company_id",
+   "properties": [],
+   "replaces_join_table": null
+  },
+  {
+   "type": "SOURCED_FROM",
+   "from_table": "risk_factors",
+   "from": "RiskFactor",
+   "fk_from": "risk_factor_id",
+   "to": "Filing",
+   "fk_to": "filing_id",
+   "properties": [],
+   "replaces_join_table": null
+  },
+  {
+   "type": "PARTY_TO",
+   "from_table": "legal_proceedings",
+   "from": "Company",
+   "fk_from": "company_id",
+   "to": "LegalProceeding",
+   "fk_to": "legal_proceeding_id",
+   "properties": [],
+   "replaces_join_table": null
+  },
+  {
+   "type": "AGAINST",
+   "from_table": "legal_proceedings",
+   "from": "LegalProceeding",
+   "fk_from": "legal_proceeding_id",
+   "to": "Company",
+   "fk_to": "counterparty_company_id",
+   "properties": [],
+   "replaces_join_table": null
+  },
+  {
+   "type": "SOURCED_FROM",
+   "from_table": "legal_proceedings",
+   "from": "LegalProceeding",
+   "fk_from": "legal_proceeding_id",
+   "to": "Filing",
+   "fk_to": "filing_id",
+   "properties": [],
+   "replaces_join_table": null
+  },
+  {
+   "type": "HAS_RELATED_PARTY_TXN",
+   "from_table": "footnote_related_parties",
+   "from": "Company",
+   "fk_from": "company_id",
+   "to": "RelatedPartyTransaction",
+   "fk_to": "related_party_id",
+   "properties": [],
+   "replaces_join_table": null
+  },
+  {
+   "type": "WITH_COMPANY",
+   "from_table": "footnote_related_parties",
+   "from": "RelatedPartyTransaction",
+   "fk_from": "related_party_id",
+   "to": "Company",
+   "fk_to": "related_company_id",
+   "properties": [],
+   "replaces_join_table": null
+  },
+  {
+   "type": "WITH_PERSON",
+   "from_table": "footnote_related_parties",
+   "from": "RelatedPartyTransaction",
+   "fk_from": "related_party_id",
+   "to": "Person",
+   "fk_to": "related_person_id",
+   "properties": [],
+   "replaces_join_table": null
+  },
+  {
+   "type": "SOURCED_FROM",
+   "from_table": "footnote_related_parties",
+   "from": "RelatedPartyTransaction",
+   "fk_from": "related_party_id",
+   "to": "Filing",
+   "fk_to": "filing_id",
+   "properties": [],
+   "replaces_join_table": null
+  }
+ ]
+}
