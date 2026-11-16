@@ -8,7 +8,7 @@ export
 PG = docker exec -i finder-pg psql -q -U bench
 PY = uv run python -m
 
-.PHONY: help pg restore data graph ontology cq smoke stage-a stage-b scale sweep runtime report test
+.PHONY: help pg restore data graph ontology cq smoke stage-a stage-b scale sweep runtime plan-lab report records shutdown test
 
 help:
 	@grep -hE '^[a-z-]+:.*?## ' Makefile | awk -F':.*?## ' '{printf "  %-10s %s\n", $$1, $$2}'
@@ -68,6 +68,15 @@ sweep: ## one scale factor end to end: make sweep DB=finder_s10k SF=s10k (loads 
 
 runtime: ## runtime study at 30k: Neo4j slotted/pipelined/parallel vs Postgres single/parallel
 	$(PY) load_test.runtime_study --db finder_scale --tag rt-scale
+
+plan-lab: ## before/after tuning: EXPLAIN/PROFILE + server vs E2E per runtime, light and heavy queries: make plan-lab DB=finder_real TAG=plan-real
+	$(PY) load_test.plan_lab --db $(or $(DB),finder_real) --tag $(or $(TAG),plan-real)
+
+records: ## archive DB-side records (+ Aura API records if an aura-cli credential exists) to results/aura_instance/
+	$(PY) enterprise.records
+
+shutdown: ## archive records, take an on-demand snapshot (await), then pause the Aura instance
+	$(PY) enterprise.records --shutdown
 
 report: ## Markdown + CSV report from results/
 	$(PY) load_test.analyze --stage-a test-noonto,test-onto --out results/REPORT.md

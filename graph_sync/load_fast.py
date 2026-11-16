@@ -81,6 +81,24 @@ async def push(sql_iter, cypher: str, mode: str, workers: int) -> int:
     return total
 
 
+def wipe_fast(d: Any) -> float:
+    """Delete everything server-side, label by label (largest first), in concurrent transactions, then drop schema.
+
+    The client-side wipe deletes 50k nodes per round trip; for tens of millions of elements over a remote link the
+    server-side `CALL { DETACH DELETE } IN CONCURRENT TRANSACTIONS` is far faster. Deadlocks between inner
+    transactions (shared relationships) are retried.
+    """
+    t = time.time()
+    labels = [r["label"] for r in d.execute_query("CALL db.labels() YIELD label RETURN label", database_=DATABASE)[0]]
+    counts = {lab: d.execute_query(f"MATCH (n:`{lab}`) RETURN count(n) AS c", database_=DATABASE)[0][0]["c"] for lab in labels}
+    for lab in sorted(counts, key=counts.get, reverse=True):
+        with d.session(database=DATABASE) as s:
+            s.run(f"CYPHER 25 MATCH (n:`{lab}`) CALL (n) {{ DETACH DELETE n }} IN CONCURRENT TRANSACTIONS OF 5000 ROWS {RETRY}").consume()
+        print(f"  wiped {lab}: {counts[lab]:,} nodes", flush=True)
+    wipe(d)  # anything left + constraints and indexes
+    return time.time() - t
+
+
 async def load(db: str, do_wipe: bool, mode: str, workers: int, batch: int, tx_rows: int) -> dict[str, Any]:
     import graph_sync.load as base
 
@@ -89,7 +107,7 @@ async def load(db: str, do_wipe: bool, mode: str, workers: int, batch: int, tx_r
     t0 = time.time()
     with driver() as d:
         if do_wipe:
-            wipe(d)
+            stats["wipe_s"] = round(wipe_fast(d), 1)
         for stmt in CONSTRAINTS + INDEXES:
             d.execute_query(stmt, database_=DATABASE)
         d.execute_query("CALL db.awaitIndexes(600)", database_=DATABASE)
@@ -156,7 +174,12 @@ def main() -> None:
     ap.add_argument("--batch", type=int, default=20000)
     ap.add_argument("--tx-rows", type=int, default=5000)
     ap.add_argument("--verify-only", action="store_true")
+    ap.add_argument("--wipe-only", action="store_true")
     a = ap.parse_args()
+    if a.wipe_only:
+        with driver() as d:
+            print(f"wiped in {wipe_fast(d):.0f}s")
+        return
     if a.verify_only:
         verify(a.db)
         return

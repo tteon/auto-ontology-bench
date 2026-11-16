@@ -81,10 +81,18 @@ Postgres.
 | Mixed workload | `load_test/mixed.py` | runtime policy | interactive + analytic + ad-hoc LLM clients at once; runtime routing with a parallel cap; TERMINATE watchdog; Postgres analogues |
 | Tuning tracks | `load_test/tuning.py` | data model / index / rewrite | each tuned variant must equal its baseline before timing |
 | Constraint A/B | `enterprise/constraint_ab.py` | existence/type constraints on/off | plan operators (count store, index order), db hits |
+| Plan lab | `load_test/plan_lab.py` | before/after tuning × every runtime × light (L1–L4) and heavy (H1–H5) queries | EXPLAIN + PROFILE / `EXPLAIN (ANALYZE, BUFFERS)` text and totals (db hits, page cache, estimated vs actual rows, operators, actual runtime); server vs client-observed (E2E) latency and their difference at concurrency 1; QPS and p99 at concurrency 8; network baseline (`RETURN 1` / `SELECT 1`); result equality across engines |
 
 Workloads (`load_test/runtime_study.py`): W1 point lookup; W2 global revenue by country over every metric fact;
 W3 three-hop co-holding fan-out; W4a distinct upstream suppliers within six tiers; W4b risk categories of upstream
 suppliers within four tiers; W4r W4a via APOC BFS.
+
+Plan lab states: *before* keeps only keys and the base indexes (existence/type constraints dropped); *after* restores the
+existence/type constraints, denormalises the metric code onto metric nodes with a composite index, and adds Postgres
+covering indexes. E2E = what the client sees (session, request, network, decoding); E2E − server = network + driver. On a
+remote managed database the network term dominates every light query, so light queries are compared on server time and
+heavy ones on both. Name ordering differs by collation (Postgres `en_US.utf8` vs Neo4j code-point order), so L3's
+top-10 is not expected to match across engines.
 
 ## 5. Neo4j Enterprise observability (`enterprise/`)
 

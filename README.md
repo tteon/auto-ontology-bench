@@ -63,10 +63,18 @@ over time, so answers can differ from the published gold).
 make stage-b                                        # DB-only replay of verified Stage A queries
 make scale                                          # synthetic 10k / 30k / 100k-company databases in Postgres
 scripts/run_phases.sh finder_s10k s10k load verify sweep depth mixed tuning
+make plan-lab DB=finder_real TAG=plan-real          # before/after tuning: EXPLAIN/PROFILE + server vs E2E, every runtime
 ```
 
 Each phase records server-side time, plans, and Neo4j Enterprise metrics (JMX registry deltas, `SHOW TRANSACTIONS`
 sampling, PROFILE arguments). See `docs/METHODOLOGY.md` §4–5.
+
+When you are done with a managed instance:
+
+```bash
+make records     # archive versions, databases, indexes, constraints, procedures, counts, JMX metrics (+ Aura API records)
+make shutdown    # the same, then an on-demand snapshot (awaited) and pause — needs an `aura-cli` credential you add yourself
+```
 
 ## Layout
 
@@ -77,8 +85,8 @@ sampling, PROFILE arguments). See `docs/METHODOLOGY.md` §4–5.
 | `ontology/` | Auto-Ontology curation, Ossie export bridge, `check_answerable` cache |
 | `benchmarks/` | CQ set (250 items; gold SQL and Cypher verified equal on both engines), verifier + tests |
 | `gateway/` | 2×2 condition router, ontology context, streaming LLM timing, executors (server time), OpenTelemetry spans |
-| `enterprise/` | Neo4j Enterprise probe, metrics collectors (JMX, `SHOW TRANSACTIONS`, locks, pools, plans), constraint A/B |
-| `load_test/` | load generator, Stage A/B, runtime study, depth sweep, mixed workload, tuning, calibration, reports |
+| `enterprise/` | Neo4j Enterprise probe, metrics collectors (JMX, `SHOW TRANSACTIONS`, locks, pools, plans), constraint A/B, instance records + snapshot/pause |
+| `load_test/` | load generator, Stage A/B, runtime study, depth sweep, mixed workload, tuning, plan lab, calibration, reports |
 | `docker/compose.yml` | benchmark Postgres pinned to a CPU set (`PG_CPUSET`) |
 | `results/` | accuracy records (per question, condition and repeat) and tables |
 
